@@ -18,9 +18,16 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Outputs (keep dir, ignore content)
+# Outputs (keep dir, ignore generated content)
 outputs/*.md
+outputs/*.pdf
 !outputs/.gitkeep
+
+# History (keep dir, ignore generated content)
+history/*.json
+history/*.md
+history/*.pdf
+!history/.gitkeep
 
 # Report (generated)
 OJT_Coursera_Project_Report.docx

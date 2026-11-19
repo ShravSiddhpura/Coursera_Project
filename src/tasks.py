@@ -1,94 +1,104 @@
 """
-ReelLore AI — 4 Sequential Tasks
-==================================
-Each task feeds its output as context to the next agent,
-forming a sequential research → writing → production pipeline.
-All individual outputs are saved to ./outputs/ for proof.
+ReelLore AI — 4 Sequential Tasks (TPM-Optimized Single Predecessor Context)
+==========================================================================
+Engineered for Dual-Algorithm Virality across Instagram Reels and LinkedIn.
+Each task receives ONLY the immediately preceding task as context (context=[prev_task])
+to strictly prevent token bloat and keep prompt requests well under Groq free-tier
+TPM limits (8,000 TPM limit).
 """
 
 import os
 from crewai import Task
 
-OUTPUTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "outputs")
+OUTPUTS_DIR = "outputs"
 
 
-def build_tasks(agents: dict, game_name: str, content_focus: str = "All-Rounder") -> list:
-    """Create the four sequential tasks for the given game and content focus."""
+def build_tasks(
+    agents: dict,
+    game_name: str,
+    content_focus: str = "All-Rounder",
+    specific_topic: str = "",
+) -> list:
+    """Create the four sequential tasks, passing only context=[prev_task] to prevent TPM limit spikes."""
 
-    focus_hints = {
-        "All-Rounder": "Cover a balanced mix of lore, Easter eggs, famous bugs, and dev stories.",
-        "Lore & Easter Eggs": "Focus heavily on hidden lore, secret references, cut content, and Easter eggs.",
-        "Famous Bugs & Patch Notes": "Prioritize legendary bugs, physics glitches, and memorable patch notes.",
-        "Dev Stories": "Emphasize behind-the-scenes development stories, crunch tales, and engineering hacks.",
-    }
-    focus_note = focus_hints.get(content_focus, focus_hints["All-Rounder"])
+    topic_str = f" [Topic: {specific_topic}]" if specific_topic else ""
 
+    # ── Task 1: Lore & Trivia Scout ─────────────────────────────────
     task_1_lore = Task(
         description=(
-            f"Research the game **{game_name}** thoroughly.\n"
-            f"Content Focus: {focus_note}\n\n"
-            f"Find at least 5 obscure or surprising pieces of game lore, Easter eggs, "
-            f"cut mechanics, hidden developer messages, or secret details about {game_name}. "
-            f"For each finding, provide the source URL when available.\n"
-            f"Structure your output with clear numbered headings."
+            f"Research 3-4 surprising lore facts, secrets, or map details for **{game_name}**{topic_str}.\n"
+            f"For each finding include:\n"
+            f"1. Headline and concise breakdown.\n"
+            f"2. Status tag: `[CONFIRMED]`, `[COMMUNITY]`, or `[SPECULATION]`.\n"
+            f"3. Retrieved source URL link.\n"
+            f"4. Suggested visual/trailer timestamp reference."
         ),
         expected_output=(
-            f"A detailed Markdown document listing 5+ fascinating lore findings about "
-            f"{game_name}, each with a heading, explanation, and source link."
+            f"3-4 structured lore findings for {game_name} with verification tags and source URLs."
         ),
         agent=agents["lore_scout"],
         output_file=os.path.join(OUTPUTS_DIR, "01_lore_findings.md"),
     )
 
+    # ── Task 2: DevLog & Bug Archaeologist ──────────────────────────
+    # Context: [task_1_lore] only
     task_2_devlog = Task(
         description=(
-            f"Research developer logs, community bug reports, and Steam patch notes for **{game_name}**.\n"
-            f"Content Focus: {focus_note}\n\n"
-            f"Find at least 5 interesting stories: hilarious bugs, physics glitches, "
-            f"creative developer workarounds, or 'how they faked it' engineering tales. "
-            f"Include real patch note excerpts when available."
+            f"Research 3-4 game engine feats, physics glitches, or developer workarounds for **{game_name}**{topic_str}.\n"
+            f"Review the lore context and provide:\n"
+            f"1. Headline and engineering tale.\n"
+            f"2. Status tag (`[CONFIRMED]`, `[COMMUNITY]`, or `[SPECULATION]`).\n"
+            f"3. Real Reddit, Steam, or article URL link.\n"
+            f"4. Exact glitch or gameplay recreation cue."
         ),
         expected_output=(
-            f"A detailed Markdown document listing 5+ dev-log stories, bugs, or patch "
-            f"note highlights for {game_name}, each with context and source references."
+            f"3-4 dev stories and engineering highlights for {game_name} with source links."
         ),
         agent=agents["devlog_archaeologist"],
+        context=[task_1_lore],
         output_file=os.path.join(OUTPUTS_DIR, "02_dev_and_bugs.md"),
     )
 
+    # ── Task 3: Dual-Platform Virality Scriptwriter ─────────────────
+    # Context: [task_2_devlog] only
     task_3_scripts = Task(
         description=(
-            f"Using the lore findings and dev-log stories gathered about **{game_name}**, "
-            f"write **3 distinct Instagram Reel scripts** (45-60 seconds each).\n\n"
-            f"Each script MUST follow this structure:\n"
-            f"- **Hook (0-3s):** A scroll-stopping opening line.\n"
-            f"- **Body/Pacing (3-45s):** Rapid-fire storytelling with 3-4 key beats.\n"
-            f"- **Loopable Climax/CTA (45-60s):** A mind-blowing payoff + call to action.\n\n"
-            f"Make them sound natural, conversational, and shareable."
+            f"Using the findings gathered for **{game_name}**{topic_str}, write **3 Complete Content Bundles**:\n\n"
+            f"For each bundle provide:\n"
+            f"### PART A: Instagram Reel Script (45-60s)\n"
+            f"- **[00:00-00:03] Hook**: Scroll-stopping visual pattern interrupt + spoken line.\n"
+            f"- **[00:03-00:15] Beat 1**: Curiosity gap & premise.\n"
+            f"- **[00:15-00:35] Beat 2**: Rapid 2-4s beat pacing with the technical/lore twist.\n"
+            f"- **[00:35-00:50] Beat 3**: Climax payoff.\n"
+            f"- **[00:50-00:60] Loop & CTA**: Phrased so the ending loops back into the opening hook + save/share trigger.\n\n"
+            f"### PART B: Companion LinkedIn Virality Post\n"
+            f"- Opening 2-line hook before '...see more'.\n"
+            f"- High-dwell professional narrative (game engineering, simulation scale, or developer leadership).\n"
+            f"- 3 bullet takeaways.\n"
+            f"- Discussion-driving comment CTA."
         ),
         expected_output=(
-            f"3 complete Instagram Reel scripts for {game_name} in Markdown, "
-            f"each clearly structured with Hook, Body, and Climax/CTA sections."
+            f"3 Complete Content Bundles for {game_name} with time-coded Reel scripts and companion LinkedIn posts."
         ),
         agent=agents["scriptwriter"],
-        context=[task_1_lore, task_2_devlog],
+        context=[task_2_devlog],
         output_file=os.path.join(OUTPUTS_DIR, "03_reel_scripts.md"),
     )
 
+    # ── Task 4: Production & Proof Director ─────────────────────────
+    # Context: [task_3_scripts] only (prevents cumulative prompt bloat)
     task_4_production = Task(
         description=(
-            f"Take the 3 Reel scripts for **{game_name}** and create a complete "
-            f"**Production Package** for each script. Include:\n\n"
-            f"1. **Visual B-Roll & Gameplay Cues** — Specific gameplay moments or footage to show.\n"
-            f"2. **On-Screen Text Overlays** — Key phrases to display on screen with timing.\n"
-            f"3. **Voiceover Tone Tags** — [excited], [whisper], [dramatic pause], etc.\n"
-            f"4. **AI Visual Prompts** — Prompts to generate supplementary visuals.\n"
-            f"5. **Instagram Caption & Hashtags** — SEO-optimized caption with 15-20 hashtags.\n"
+            f"Take the 3 Content Bundles for **{game_name}** and assemble the master production package:\n\n"
+            f"1. **Shoot-Ready Production Sheets**: Visual B-roll cues, on-screen text overlays, "
+            f"voiceover tone tags (`[intense]`, `[whisper]`), and Instagram captions + 15 hashtags.\n"
+            f"2. **Human-Readable Proof of Content & Metadata** (plain English, no raw JSON):\n"
+            f"- Where it was taken from: named sources with clickable URLs.\n"
+            f"- Fact-Check & Confidence Matrix (🟢 Confirmed, 🟡 Community, 🔴 Speculation).\n"
+            f"- Video & Visual Reference Guide: exact trailer timestamps and gameplay scenes for editors."
         ),
         expected_output=(
-            f"A comprehensive Markdown production package for all 3 Reel scripts about "
-            f"{game_name}, with B-roll cues, text overlays, voiceover tags, AI prompts, "
-            f"and Instagram SEO captions."
+            f"Master production package for {game_name} with shoot sheets, captions, and verified Proof of Content."
         ),
         agent=agents["production_director"],
         context=[task_3_scripts],
